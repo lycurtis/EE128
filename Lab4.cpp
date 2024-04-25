@@ -1,8 +1,11 @@
+#include "fsl_device_registers.h"
+#include <stdint.h>
+
 unsigned int nr_overflows = 0;
 
 void FTM3_IRQHANDLER(void) {
     nr_overflows++;
-    uint32_t_SC_VAL = FTM3_SC;
+    uint32_t SC_VAL = FTM3_SC;
     FTM3_SC &= 0x7F; //clear TOF
 }
 
@@ -32,10 +35,10 @@ void main(void) {
 
         FTM3_C6SC = 0x8; // falling edge
         while(!(FTM3_C6SC & 0x80)); // wait for CHF
-        FTM3_C6SC &= ~(1 << 7) //c6 continues to capture
+        FTM3_C6SC &= ~(1 << 7); //c6 continues to capture
         t2 = FTM3_C6V; // second edge
 
-        FTCM3_CNT = 0x4; //rising edge
+        FTM3_CNT = 0x4; //rising edge
         while(!(FTM3_C6SC & 0x80)); //wait for CHF
         FTM3_C6SC &= ~(1 << 7); //c6 continues to capture
         t3 = FTM3_C6V; //third edge
@@ -43,12 +46,12 @@ void main(void) {
         if (t2 >= t1)
             pulse_width = (nr_overflows << 16) + (t2 - t1);
         else
-            pulse_width = ((nr_overflows-1) << 16) + (t2 - t1);
+        	pulse_width = ((nr_overflows-1) << 16) + (t2 - t1);
 
-        if (t3 > = t1)
-            pulse_width = (nr_overflows << 16) + (t3 - t1);
-        else 
-            pulse_width = ((nr_overflows-1) << 16) + (t3-t1);
+        if (t3 >= t1)
+        	period = (nr_overflows << 16) + (t3 - t1);
+        else
+        	period = ((nr_overflows-1) << 16) + (t3-t1);
 
         duty_cycle = (pulse_width * 100)/period;
         
