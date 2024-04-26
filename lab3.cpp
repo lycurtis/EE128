@@ -93,7 +93,6 @@ int main(void)
 	//Artificial Clock generation
 	for(;;){
 		GPIOB_PTOR |= (1<<10);
-		//GPIOD_PTOR |= (1<<7);
 		for(int i = 0; i < 0x10000; i++);//delay for loop
 	}
 
