@@ -3,7 +3,8 @@
 
 unsigned char decoder[10] = {0x7E, 0x30, 0x6D, 0x79, 0x33, 0x5B, 0x5F, 0x70, 0x7F, 0x7B}; //display values 0-9 on 7 segment
 unsigned int count = 0;
-unsigned int value = 0;
+float value = 0.0f;
+unsigned int potVal = 0;
 
 unsigned short ADC_Read16B(void){
 	ADC0_SC1A = 0x00; //Write to SC1A to start conversion
@@ -15,20 +16,19 @@ unsigned short ADC_Read16B(void){
 void PORTA_IRQHandler(void){
 	//Toggle ones place decimal point
 	NVIC_ClearPendingIRQ(PORTA_IRQn); //clear pending interrupts
-	//GPIOD_PTOR |= 0xFF; //Toggle
 	unsigned int input = GPIOB_PDIR;//Read port B
 	unsigned int MODE_SW = input & 0x04; //PB2
 	unsigned int CNT_DIR = input & 0x08; //PB3
 
-	if(!MODE_SW){ //ADC mode
+	if(!MODE_SW){ //ADC mode (SW 2 down)
 		//read from ADC and convert to decimal value
-		value = ADC_Read16B();
+		potVal = ADC_Read16B();
 	}
 	else if(MODE_SW){ //Count Mode
-		if(!CNT_DIR){
+		if(!CNT_DIR){ //(SW 1 down)
 			//count up to 99 and roll over to 0
 			if(count < 99){
-				count++;
+				count++; //count up
 			}
 			else{
 				count = 0;
@@ -37,7 +37,7 @@ void PORTA_IRQHandler(void){
 		else{
 			//count down to 0 and roll over to 99
 			if(count > 0){
-				count--;
+				count--; //count down
 			}
 			else{
 				count = 99;
@@ -49,14 +49,17 @@ void PORTA_IRQHandler(void){
 	if(MODE_SW){ //count mode
 		value = count;
 	}
-	else{ //ADC mode 0-255
-		 //scale down 0-255 to 0-3.3V
+	else{ //ADC mode
+		 //scale down to 0-3.3V
+		value = (potVal*3.3)/6400;
+		//value = (result * (Vrh - Vrl))/(2^16-1)
 	}
 	PORTA_ISFR = (1 << 1); //Clear ISFR for PORTA, Pin 1
 	GPIOD_PCOR = 0xFF; //clears output on PortD[0:7]
 	GPIOC_PCOR = 0xBF; //clears output on PortC[0:7]
-	GPIOD_PSOR = (unsigned int)decoder[value/10]; //sets output to converted value PortD
-	GPIOC_PSOR = ((((unsigned int)decoder[value%10]) & 0x40) << 1) | ((unsigned int)decoder[value%10] & 0x3F); //sets output to converted value PortC
+	GPIOD_PSOR = (unsigned int)decoder[(int)value/10]; //sets output to converted value PortD
+	GPIOC_PSOR = ((((unsigned int)decoder[(int)value%10]) & 0x40) << 1) | ((unsigned int)decoder[(int)value%10] & 0x3F);
+	//GPIOC_PSOR = ((((unsigned int)decoder[value%10]) & 0x40) << 1) | ((unsigned int)decoder[value%10] & 0x3F); //sets output to converted value PortC
 }
 
 int main(void)
