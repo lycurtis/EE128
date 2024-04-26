@@ -55,10 +55,11 @@ void PORTA_IRQHandler(void){
 		//value = (result * (Vrh - Vrl))/(2^16-1)
 	}
 	PORTA_ISFR = (1 << 1); //Clear ISFR for PORTA, Pin 1
-	GPIOD_PCOR = 0xFF; //clears output on PortD[0:7]
+	GPIOD_PCOR = 0x7F; //clears output on PortD[0:6] DO NOT CLEAR PIN 7 because pin 7 is reserved for toggle
 	GPIOC_PCOR = 0xBF; //clears output on PortC[0:7]
 	GPIOD_PSOR = (unsigned int)decoder[(int)value/10]; //sets output to converted value PortD
 	GPIOC_PSOR = ((((unsigned int)decoder[(int)value%10]) & 0x40) << 1) | ((unsigned int)decoder[(int)value%10] & 0x3F);
+	GPIOD_PTOR |= (1<<7);
 	//GPIOC_PSOR = ((((unsigned int)decoder[value%10]) & 0x40) << 1) | ((unsigned int)decoder[value%10] & 0x3F); //sets output to converted value PortC
 }
 
@@ -92,6 +93,7 @@ int main(void)
 	//Artificial Clock generation
 	for(;;){
 		GPIOB_PTOR |= (1<<10);
+		//GPIOD_PTOR |= (1<<7);
 		for(int i = 0; i < 0x10000; i++);//delay for loop
 	}
 
