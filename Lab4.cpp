@@ -1,12 +1,19 @@
 #include "fsl_device_registers.h"
 #include <stdint.h>
 
+unsigned char decoder[10] = {0x7E, 0x30, 0x6D, 0x79, 0x33, 0x5B, 0x5F, 0x70, 0x7F, 0x7B}; //display values 0-9 on 7 segment
 unsigned int nr_overflows = 0;
 
 void FTM3_IRQHANDLER(void) {
     nr_overflows++;
     uint32_t SC_VAL = FTM3_SC;
     FTM3_SC &= 0x7F; //clear TOF
+
+    //display value onto 7 segment 
+    GPIOD_PCOR = 0x7F; //clears output on PortD[0:6] DO NOT CLEAR PIN 7 because pin 7 is reserved for toggle
+	GPIOC_PCOR = 0xBF; //clears output on PortC
+	GPIOD_PSOR = (unsigned int)decoder[(int)value/10]; //sets output to converted value PortD
+	GPIOC_PSOR = ((((unsigned int)decoder[(int)value%10]) & 0x40) << 1) | ((unsigned int)decoder[(int)value%10] & 0x3F);
 }
 
 void main(void) {
